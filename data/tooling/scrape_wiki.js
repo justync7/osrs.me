@@ -155,7 +155,7 @@ function saveItems(cb) {
 }
 
 function main(id) {
-    loadItems(function(err) {
+  loadItems(function(err) {
     if (typeof items[id] != "undefined") {
       console.log("Scraping item: " + items[id].name);
       scrapeItem(process.argv[2], function() {
