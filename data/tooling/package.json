@@ -1,0 +1,22 @@
+{
+  "name": "tooling",
+  "version": "1.0.0",
+  "description": "",
+  "main": "scrape_wiki.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/justync7/ProjectOSRS.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/justync7/ProjectOSRS/issues"
+  },
+  "homepage": "https://github.com/justync7/ProjectOSRS#readme",
+  "dependencies": {
+    "parse-wikitext": "^0.3.3"
+  }
+}

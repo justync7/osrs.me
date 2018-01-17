@@ -20,33 +20,39 @@ class ItemIterator(object):
         # for i in range(4151, 4152):
 
             item_id = str(i)
-
+            
+            if item_id == "1075":
+              print item_list['item'][item_id]
+              
             # If i 
             if item_id not in item_list['item']:
                 continue
 
-            if 'wiki_mapped' in item_list['item'][item_id]:
+            if item_list['item'][item_id]['wiki_mapped']:
                 continue
 
             print 'Fetching data for item with id', item_id
 
             resp = executing_function(item_list['item'][item_id])
+            print resp
 
             for key in resp:
+                print 'Key:', key
                 if 'item' in resp:
+                    item_list['item'][item_id]['wiki_mapped'] = True
                     for item_key in resp['item']:
                         item_list['item'][item_id][item_key] = resp['item'][item_key]
 
                 if 'bonuses' in resp:
+                    item_list['item'][item_id]['wiki_mapped'] = True
                     for item_key in resp['bonuses']:
+                        print item_key
                         if item_key == 'slot' or item_key == 'attack_speed':
                             item_list['item'][item_id][item_key] = resp['bonuses'][item_key]
                         else:
                             if 'stats' not in item_list['item'][item_id]:
                                 item_list['item'][item_id]['stats'] = {}
                             item_list['item'][item_id]['stats'][item_key] = resp['bonuses'][item_key]
-
-            item_list['item'][item_id]['wiki_mapped'] = True
 
 _ItemIterator = ItemIterator()
 _FileManager = FileManager()
@@ -61,7 +67,7 @@ def load_from_wiki(item):
 
     if response is None:
         return {}
-
+        
     return _WikiParser.parse_response(response)
 
 
@@ -69,7 +75,7 @@ item = {
     'id': -1,
     'name': '',
     'description': '',
-    'members' False,
+    'members': False,
     'equipable': False,
     'quest_item': False,
     'tradeable': False,
@@ -82,7 +88,7 @@ item = {
         'attack': {
             'crush': 0, 
             'magic': 0, 
-            'range': 70, 
+            'range': 0, 
             'slash': 0, 
             'stab': 0
         },

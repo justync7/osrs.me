@@ -7,7 +7,7 @@ import json
 
 class WikiParser(object):
 
-    REGEX = r"{{Infobox (Item|Bonuses)\n(\|(.)*\n)*}}"
+    REGEX = r"{{Infobox (Item|Bonuses)\s*(\|(.*)\s*)*}}"
 
     WIKI_URL = 'http://oldschoolrunescape.wikia.com/wiki/'
     MODIFIER = '?action=raw'
@@ -126,6 +126,7 @@ class WikiParser(object):
                 elif data_key == 'prayer':
                     item_bonuses_json['bonus']['prayer'] = data_value
                 elif data_key == 'slot':
+                    print data_value.lower()
                     item_bonuses_json['slot'] = data_value.lower()
 
         return item_bonuses_json
@@ -137,9 +138,9 @@ class WikiParser(object):
         resp = {}
 
         for matchNum, match in enumerate(matches):
-
+            print "match"
             group = match.group()
-
+            
             if group.startswith('{{Infobox Item'):
                 resp['item'] = WikiParser.parse_item_data(self, group)
 

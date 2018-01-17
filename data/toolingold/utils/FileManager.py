@@ -1,3 +1,6 @@
+import os
+import json
+
 class FileManager(object):
     """
     Provide a means to access local files.
@@ -5,7 +8,7 @@ class FileManager(object):
 
     CURRENT_DIR = os.path.dirname(__file__) + '/'
     
-    ITEM_DATA_FILE = CURRENT_DIR + '../raw/items.json'
+    ITEM_DATA_FILE = CURRENT_DIR + '../../raw/items.json'
 
     def __init__(self, file_name=None):
         if file_name == None:
@@ -18,7 +21,7 @@ class FileManager(object):
 
         with open(path) as item_data_file:
             item_list = json.load(item_data_file)
-
+            
         return item_list
 
     def write_item_data(self, path, json_data):
