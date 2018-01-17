@@ -17,6 +17,9 @@
   },
   "homepage": "https://github.com/justync7/ProjectOSRS#readme",
   "dependencies": {
-    "parse-wikitext": "^0.3.3"
+    "fs-promise": "^2.0.3",
+    "lodash": "^4.17.4",
+    "parse-wikitext": "^0.3.3",
+    "progress": "^2.0.0"
   }
 }

@@ -1,183 +1,144 @@
 "use strict";
-if (process.argv.length <= 2) {
-  console.log("Usage: " + __filename + " <id>");
-  process.exit(-1);
-}
 
-const fs = require("fs");
+const _ = require("lodash");
+const ProgressBar = require('progress');
+const promisify = require("util").promisify;
+const fs = require("fs-promise");
 const WikiTextParser = require("parse-wikitext");
 const WIKI_URL = "oldschoolrunescape.wikia.com";
 const wikiTextParser = new WikiTextParser(WIKI_URL);
+function getArticle(name) {
+  return new Promise((resolve, reject) => {
+    wikiTextParser.getArticle(name, (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(data);
+      }
+    });
+  });
+}
 const INFOBOX_REGEX = /{{Infobox (Item|Bonuses)\s*(\|(.*)\s*)*}}/g
 const ITEMS_JSON_LOCATION = "../raw/items.json";
 
-let itemsRaw;
-let items;
+const getCleanedName = v => encodeURI(v.replace(/\s/g, "_"));
+const transform = (i, t) => { return {index: i, transform: t}; };
+const identity = v => v;
+const isYes = v => v.toLowerCase() === "yes";
+const percentage = v => parseInt(v) / 100;
+const lowerString = v => v.toLowerCase();
+const trim = v => v.trim();
 
-function cleanName(name) {
-  return name.replace(" ", "_");
-}
+const WIKI_TRANSFORMS = {
+  tradeable: transform(["tradeable"], isYes),
+  equipable: transform(["equipable"], isYes),
+  stackable: transform(["stackable"], isYes),
+  quest: transform(["quest_item"], isYes),
+  members: transform(["members"], isYes),
+  examine: transform(["description"], identity),
+  weight: transform(["weight"], parseInt),
+  high: transform(["high_alch"], parseInt),
+  low: transform(["low_alch"], parseInt),
+  store: transform(["store_value"], parseInt),
+  astab: transform(["stats", "attack", "stab"], parseInt),
+  aslash: transform(["stats", "attack", "slash"], parseInt),
+  acrush: transform(["stats", "attack", "crush"], parseInt),
+  amagic: transform(["stats", "attack", "magic"], parseInt),
+  arange: transform(["stats", "defence", "range"], parseInt),
+  dstab: transform(["stats", "defence", "stab"], parseInt),
+  dslash: transform(["stats", "defence", "slash"], parseInt),
+  dcrush: transform(["stats", "defence", "crush"], parseInt),
+  dmagic: transform(["stats", "defence", "magic"], parseInt),
+  drange: transform(["stats", "defence", "range"], parseInt),
+  aspeed: transform(["attack_speed"], parseInt),
+  str: transform(["stats", "bonus", "strength"], parseInt),
+  rstr: transform(["stats", "bonus", "range_strength"], parseInt),
+  mdmg: transform(["stats", "bonus", "magic_strength"], parseInt),
+  prayer: transform(["stats", "bonus", "prayer"], parseInt),
+  slot: transform(["slot"], lowerString)
+};
 
-function scrapeItem(id, cb) {
-  let item = items[id];
-  let name = cleanName(item.name);
+async function scrapeItem(id, items) {
+  const item = items[id];
+  const name = getCleanedName(item.name);
   
-  wikiTextParser.getArticle(name,function(err,data){
-    if (err) {
-      console.log(err);
-      return;
-    }
-    
-    let matches = data.match(INFOBOX_REGEX);
+  let data = await getArticle(name);
+  
+  const matches = data.match(INFOBOX_REGEX);
+  if (matches) {
     matches.forEach(function(match) {
-      let infobox = wikiTextParser.parseTemplate(match);
-      let template = infobox.template.trim();
+      const infobox = wikiTextParser.parseTemplate(match);
+      const template = infobox.template.trim();
+      
       for (let key in infobox.namedParts) {
         key = key.trim();
-        let value = infobox.namedParts[key].trim();
-        if (template === "Infobox Item") {
-          switch(key) {
-            case "tradeable":
-              item["tradeable"] = value === "Yes";
-              break;
-            case "equipable":
-              item["equipable"] = value === "Yes";
-              break;
-            case "stackable":
-              item["stackable"] = value === "Yes";
-              break;
-            case "quest":
-              item["quest_item"] = value === "Yes";
-              break;
-            case "members":
-              item["members"] = value === "Yes";
-              break;   
-            case "examine":
-              item["description"] = value;
-              break;
-            case "weight":
-              item["weight"] = parseFloat(value);
-              break;
-            case "high":
-              item["high_alch"] = parseInt(value);
-              break;
-            case "low":
-              item["low_alch"] = parseInt(value);
-              break;
-            case "store":
-              item["store_value"] = parseInt(value);
-              break;              
-            default:
-              //console.log(key + ": " + value);
-              break;
-          }
-        } else if (template === "Infobox Bonuses") {
-          switch(key) {
-            case "astab":
-              item["stats"]["attack"]["stab"] = parseInt(value);
-              break;
-            case "aslash":
-              item["stats"]["attack"]["slash"] = parseInt(value);
-              break;
-            case "acrush":
-              item["stats"]["attack"]["crush"] = parseInt(value);
-              break;
-            case "amagic":
-              item["stats"]["attack"]["magic"] = parseInt(value);
-              break;
-            case "arange":
-              item["stats"]["attack"]["range"] = parseInt(value);
-              break;
-            case "dstab":
-              item["stats"]["defence"]["stab"] = parseInt(value);
-              break;
-            case "dslash":
-              item["stats"]["defence"]["slash"] = parseInt(value);
-              break;
-            case "dcrush":
-              item["stats"]["defence"]["crush"] = parseInt(value);
-              break;
-            case "dmagic":
-              item["stats"]["defence"]["magic"] = parseInt(value);
-              break;
-            case "drange":
-              item["stats"]["defence"]["range"] = parseInt(value);
-              break;  
-            case "aspeed":
-              item["attack_speed"] = parseInt(value);
-              break;
-            case "str":
-              item["stats"]["bonus"]["strength"] = value;
-              break;
-            case "rstr":
-              item["stats"]["bonus"]["range_strength"] = value;
-              break;
-            case "mdmg":
-              item["stats"]["bonus"]["magic_strength"] = value;
-              break;
-            case "prayer":
-              item["stats"]["bonus"]["prayer"] = value;
-              break;
-            case "slot":
-              item["slot"] = value.toLowerCase();
-              break;
-            default:
-              //console.log(key + ": " + value);
-              break;
-          }
+        let value = infobox.namedParts[key].toLowerCase().trim();
+        
+        if (key in WIKI_TRANSFORMS) {
+          const t = WIKI_TRANSFORMS[key];
+          _.set(item, t.index, t.transform(value));
         }
       }
     });
     
-    return cb();
-  });
-}
-
-function loadItems(cb) {
-  try {
-    itemsRaw = require(ITEMS_JSON_LOCATION);
-    items = itemsRaw["item"];
-    return cb();
-  } catch (err) {
-    return cb(err);
+    item.wiki_mapped = true;
+    return true;
+  } else if (item.wiki_mapped) {
+    item.wiki_mapped = false;
+    return true;
+  } else {
+    return false;
   }
 }
 
-function saveItems(cb) {
-  fs.writeFile(ITEMS_JSON_LOCATION, JSON.stringify(itemsRaw, null, 2), function(err) {
-    if(err) {
-      cb(err);
-      return;
-    }
-    
-    return cb();
-  });
+async function loadItems() {
+  const itemData = await fs.readFile(ITEMS_JSON_LOCATION);
+  return JSON.parse(itemData);
 }
 
-function main(id) {
-  loadItems(function(err) {
-    if (typeof items[id] != "undefined") {
-      console.log("Scraping item: " + items[id].name);
-      scrapeItem(process.argv[2], function() {
-        saveItems(function(err) {
-          if(err) {
-            console.log(err);
-            return;
-          }
-          
-          console.log("Successfully saved to file");
-        });
-      });
-    } else {
-      console.log("Item not found.");
-    }
-  });
+async function saveItems(itemsRaw) {
+  return await fs.writeFile(ITEMS_JSON_LOCATION, JSON.stringify(itemsRaw, null, 2));
 }
 
-if (process.argv.length > 2) {
-  let id = process.argv[2];
+async function main(id) {
+  const itemsRaw = await loadItems();
+  const items = itemsRaw.item;
   
-  main(id);
+  if (typeof items[id] != "undefined") {
+    console.log("Scraping item: " + items[id].name);
+    await scrapeItem(id, items);
+    await saveItems(itemsRaw);
+    console.log("Successfully saved to file");
+  } else {
+    console.log("Item not found.");
+  }
 }
+
+(async () => {
+  if (process.argv.length > 2) {
+    let id = process.argv[2];
+    if (id === "all") {
+      const itemsRaw = await loadItems();
+      const items = itemsRaw.item;
+      const bar = new ProgressBar(':bar :current/:total', { total: Object.keys(items).length });
+      for (let item_id in items) {
+        try {
+          if(await scrapeItem(item_id, items)) {
+            await saveItems(itemsRaw);
+          }
+        } catch (e) {
+          console.log(e);
+        }
+        bar.tick();
+      }
+      await saveItems(itemsRaw);
+    } else {
+      main(id);
+    }
+  } else if (require.main === module) {
+    console.log(`Usage: ${__filename} <id>`);
+    process.exit(-1);
+  }
+})();
 
 module.exports = main;
