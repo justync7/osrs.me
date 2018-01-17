@@ -1,21 +1,21 @@
 {
-  "name": "tooling",
+  "name": "osrs-me",
   "version": "1.0.0",
   "description": "",
-  "main": "scrape_wiki.js",
+  "main": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/justync7/ProjectOSRS.git"
+    "url": "git+https://github.com/justync7/osrs.me.git"
   },
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/justync7/ProjectOSRS/issues"
+    "url": "https://github.com/justync7/osrs.me/issues"
   },
-  "homepage": "https://github.com/justync7/ProjectOSRS#readme",
+  "homepage": "https://github.com/justync7/osrs.me#readme",
   "dependencies": {
     "fs-promise": "^2.0.3",
     "lodash": "^4.17.4",
