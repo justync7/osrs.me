@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/justync7/osrs.me#readme",
   "dependencies": {
+    "cloudscraper": "^1.4.1",
     "fs-promise": "^2.0.3",
     "lodash": "^4.17.4",
     "parse-wikitext": "^0.3.3",

@@ -2,20 +2,40 @@
 
 const _ = require("lodash");
 const ProgressBar = require('progress');
-const promisify = require("util").promisify;
 const fs = require("fs-promise");
 const WikiTextParser = require("parse-wikitext");
 const WIKI_URL = "oldschoolrunescape.wikia.com";
 const wikiTextParser = new WikiTextParser(WIKI_URL);
+const itemSchema = require("./lib/item_schema.js");
+
+async function loadItems() {
+  return await itemSchema.loadItems(ITEMS_JSON_LOCATION);
+}
+
+async function saveItems(itemsRaw) {
+  return await itemSchema.saveItems(itemsRaw, ITEMS_JSON_LOCATION);
+}
+
+const wikiCache = {};
 function getArticle(name) {
   return new Promise((resolve, reject) => {
-    wikiTextParser.getArticle(name, (err, data) => {
-      if (err) {
-        reject(err);
+    if (!wikiCache[name]) {
+      wikiTextParser.getArticle(name, (err, data) => {
+        wikiCache[name] = {err, data};
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    } else {
+      const cached = wikiCache[name];
+      if (cached.err) {
+        reject(cached.err);
       } else {
-        resolve(data);
+        resolve(cached.data);
       }
-    });
+    }
   });
 }
 const INFOBOX_REGEX = /{{Infobox (Item|Bonuses)\s*(\|(.*)\s*)*}}/g
@@ -25,7 +45,9 @@ const getCleanedName = v => encodeURI(v.replace(/\s/g, "_"));
 const transform = (i, t) => { return {index: i, transform: t}; };
 const identity = v => v;
 const isYes = v => v.toLowerCase() === "yes";
-const percentage = v => parseInt(v) / 100;
+const parseNumber = v => parseInt(v) || -1;
+const percentage = v => (parseInt(v) || 0) / 100;
+const int
 const lowerString = v => v.toLowerCase();
 const trim = v => v.trim();
 
@@ -36,25 +58,25 @@ const WIKI_TRANSFORMS = {
   quest: transform(["quest_item"], isYes),
   members: transform(["members"], isYes),
   examine: transform(["description"], identity),
-  weight: transform(["weight"], parseInt),
-  high: transform(["high_alch"], parseInt),
-  low: transform(["low_alch"], parseInt),
-  store: transform(["store_value"], parseInt),
-  astab: transform(["stats", "attack", "stab"], parseInt),
-  aslash: transform(["stats", "attack", "slash"], parseInt),
-  acrush: transform(["stats", "attack", "crush"], parseInt),
-  amagic: transform(["stats", "attack", "magic"], parseInt),
-  arange: transform(["stats", "defence", "range"], parseInt),
-  dstab: transform(["stats", "defence", "stab"], parseInt),
-  dslash: transform(["stats", "defence", "slash"], parseInt),
-  dcrush: transform(["stats", "defence", "crush"], parseInt),
-  dmagic: transform(["stats", "defence", "magic"], parseInt),
-  drange: transform(["stats", "defence", "range"], parseInt),
-  aspeed: transform(["attack_speed"], parseInt),
-  str: transform(["stats", "bonus", "strength"], parseInt),
-  rstr: transform(["stats", "bonus", "range_strength"], parseInt),
-  mdmg: transform(["stats", "bonus", "magic_strength"], parseInt),
-  prayer: transform(["stats", "bonus", "prayer"], parseInt),
+  weight: transform(["weight"], parseNumber),
+  high: transform(["high_alch"], parseNumber),
+  low: transform(["low_alch"], parseNumber),
+  store: transform(["store_value"], parseNumber),
+  astab: transform(["stats", "attack", "stab"], parseNumber),
+  aslash: transform(["stats", "attack", "slash"], parseNumber),
+  acrush: transform(["stats", "attack", "crush"], parseNumber),
+  amagic: transform(["stats", "attack", "magic"], parseNumber),
+  arange: transform(["stats", "defence", "range"], parseNumber),
+  dstab: transform(["stats", "defence", "stab"], parseNumber),
+  dslash: transform(["stats", "defence", "slash"], parseNumber),
+  dcrush: transform(["stats", "defence", "crush"], parseNumber),
+  dmagic: transform(["stats", "defence", "magic"], parseNumber),
+  drange: transform(["stats", "defence", "range"], parseNumber),
+  aspeed: transform(["attack_speed"], parseNumber),
+  str: transform(["stats", "bonus", "strength"], parseNumber),
+  rstr: transform(["stats", "bonus", "range_strength"], parseNumber),
+  mdmg: transform(["stats", "bonus", "magic_strength"], percentage),
+  prayer: transform(["stats", "bonus", "prayer"], parseNumber),
   slot: transform(["slot"], lowerString)
 };
 
@@ -136,7 +158,7 @@ async function main(id) {
       main(id);
     }
   } else if (require.main === module) {
-    console.log(`Usage: ${__filename} <id>`);
+    console.log(`Usage: ${__filename} <id | all>`);
     process.exit(-1);
   }
 })();
