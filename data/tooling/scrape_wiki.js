@@ -47,7 +47,6 @@ const identity = v => v;
 const isYes = v => v.toLowerCase() === "yes";
 const parseNumber = v => parseInt(v) || -1;
 const percentage = v => (parseInt(v) || 0) / 100;
-const int
 const lowerString = v => v.toLowerCase();
 const trim = v => v.trim();
 

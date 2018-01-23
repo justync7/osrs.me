@@ -21,7 +21,7 @@ async function main() {
   let i = 0;
   Object.keys(items).forEach(itemId => {
     let item = items[itemId];
-    if(!item.name || item.name.toLowerCase() === "null") {
+    if(!item.name || item.name.toLowerCase() === "null" || typeof item.id === "undefined") {
       delete items[itemId];
       i++;
     } else {

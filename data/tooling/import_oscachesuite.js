@@ -21,12 +21,16 @@ async function main() {
   const cacheExport = require("../raw/cache_export.json");
   Object.keys(cacheExport).forEach(cacheItemKey => {
     let cacheItem = cacheExport[cacheItemKey];
-    if(!items[cacheItemKey] && cacheItem.name && cacheItem.name.toLowerCase() !== "null") {
+    if(!items[cacheItemKey] && cacheItem.name && cacheItem.inventoryModel && cacheItem.name.toLowerCase() !== "null") {
       items[cacheItemKey] = {};
     }
     
-    if(items[cacheItemKey] && !items[cacheItemKey].name) {
+    if(items[cacheItemKey] && cacheItem.inventoryModel && !items[cacheItemKey].name) {
       items[cacheItemKey].name = cacheItem.name;
+    }
+    
+    if(items[cacheItemKey] && cacheItem.inventoryModel &&!items[cacheItemKey].id) {
+      items[cacheItemKey].id = parseInt(cacheItemKey);
     }
     
     if (items[cacheItemKey]) {
